@@ -2,14 +2,8 @@
 require_once '../config/config.php';
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit(0);
-}
+setCorsHeaders();
+handlePreflight();
 
 requireLogin();
 
@@ -35,7 +29,7 @@ try {
             jsonResponse(['error' => 'Invalid action'], 400);
     }
 } catch (Exception $e) {
-    debugLog("Dashboard API Exception", ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    debugLog("Dashboard API Exception", ['message' => $e->getMessage()]);
     jsonResponse(['error' => 'Internal server error: ' . $e->getMessage()], 500);
 }
 
@@ -43,41 +37,16 @@ function getDashboardStats() {
     global $pdo;
     
     try {
-        // Total bugs
-        $stmt = $pdo->query("SELECT COUNT(*) FROM bugs");
-        $totalBugs = $stmt->fetchColumn() ?: 0;
+        $stats = [
+            'total_bugs' => getCount("SELECT COUNT(*) FROM bugs"),
+            'my_bugs' => getCount("SELECT COUNT(*) FROM bugs WHERE assignee_id = ?", [$_SESSION['user_id']]),
+            'recent_bugs' => getCount("SELECT COUNT(*) FROM bugs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)"),
+            'status_counts' => getGroupedCounts("SELECT status, COUNT(*) as count FROM bugs GROUP BY status"),
+            'priority_counts' => getGroupedCounts("SELECT priority, COUNT(*) as count FROM bugs GROUP BY priority")
+        ];
         
-        // Bugs by status
-        $stmt = $pdo->query("SELECT status, COUNT(*) as count FROM bugs GROUP BY status");
-        $statusCounts = $stmt->fetchAll() ?: [];
-        
-        // Bugs by priority
-        $stmt = $pdo->query("SELECT priority, COUNT(*) as count FROM bugs GROUP BY priority");
-        $priorityCounts = $stmt->fetchAll() ?: [];
-        
-        // My assigned bugs
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM bugs WHERE assignee_id = ?");
-        $stmt->execute([$_SESSION['user_id']]);
-        $myBugs = $stmt->fetchColumn() ?: 0;
-        
-        // Recent activity (last 7 days)
-        $stmt = $pdo->query("SELECT COUNT(*) FROM bugs WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)");
-        $recentBugs = $stmt->fetchColumn() ?: 0;
-        
-        debugLog("Dashboard stats retrieved", [
-            'total_bugs' => $totalBugs,
-            'my_bugs' => $myBugs,
-            'status_counts' => count($statusCounts),
-            'priority_counts' => count($priorityCounts)
-        ]);
-        
-        jsonResponse([
-            'total_bugs' => (int)$totalBugs,
-            'my_bugs' => (int)$myBugs,
-            'recent_bugs' => (int)$recentBugs,
-            'status_counts' => $statusCounts,
-            'priority_counts' => $priorityCounts
-        ]);
+        debugLog("Dashboard stats retrieved", $stats);
+        jsonResponse($stats);
         
     } catch (PDOException $e) {
         debugLog("getDashboardStats database error", ['error' => $e->getMessage()]);
@@ -87,20 +56,41 @@ function getDashboardStats() {
             'total_bugs' => 0,
             'my_bugs' => 0,
             'recent_bugs' => 0,
-            'status_counts' => [
-                ['status' => 'New', 'count' => 0],
-                ['status' => 'In Progress', 'count' => 0],
-                ['status' => 'Resolved', 'count' => 0],
-                ['status' => 'Closed', 'count' => 0]
-            ],
-            'priority_counts' => [
-                ['priority' => 'Low', 'count' => 0],
-                ['priority' => 'Medium', 'count' => 0],
-                ['priority' => 'High', 'count' => 0],
-                ['priority' => 'Critical', 'count' => 0]
-            ]
+            'status_counts' => getDefaultStatusCounts(),
+            'priority_counts' => getDefaultPriorityCounts()
         ]);
     }
+}
+
+function getCount($sql, $params = []) {
+    global $pdo;
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    return (int)$stmt->fetchColumn();
+}
+
+function getGroupedCounts($sql) {
+    global $pdo;
+    $stmt = $pdo->query($sql);
+    return $stmt->fetchAll() ?: [];
+}
+
+function getDefaultStatusCounts() {
+    return [
+        ['status' => 'New', 'count' => 0],
+        ['status' => 'In Progress', 'count' => 0],
+        ['status' => 'Resolved', 'count' => 0],
+        ['status' => 'Closed', 'count' => 0]
+    ];
+}
+
+function getDefaultPriorityCounts() {
+    return [
+        ['priority' => 'Low', 'count' => 0],
+        ['priority' => 'Medium', 'count' => 0],
+        ['priority' => 'High', 'count' => 0],
+        ['priority' => 'Critical', 'count' => 0]
+    ];
 }
 
 function getRecentBugs() {
@@ -124,7 +114,6 @@ function getRecentBugs() {
         $recentBugs = $stmt->fetchAll();
         
         debugLog("Recent bugs retrieved", ['count' => count($recentBugs)]);
-        
         jsonResponse(['recent_bugs' => $recentBugs ?: []]);
         
     } catch (PDOException $e) {
@@ -137,45 +126,8 @@ function getChartData() {
     global $pdo;
     
     try {
-        // Bugs created over time (last 30 days)
-        $stmt = $pdo->query("
-            SELECT DATE(created_at) as date, COUNT(*) as count
-            FROM bugs
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY DATE(created_at)
-            ORDER BY date ASC
-        ");
-        $bugsOverTime = $stmt->fetchAll() ?: [];
-        
-        // Resolution time analysis
-        $stmt = $pdo->query("
-            SELECT 
-                priority,
-                AVG(DATEDIFF(COALESCE(updated_at, NOW()), created_at)) as avg_resolution_days
-            FROM bugs 
-            WHERE status IN ('Resolved', 'Closed')
-            GROUP BY priority
-        ");
-        $resolutionTimes = $stmt->fetchAll() ?: [];
-        
-        // If no resolution data, create default structure
-        if (empty($resolutionTimes)) {
-            $resolutionTimes = [
-                ['priority' => 'Low', 'avg_resolution_days' => 0],
-                ['priority' => 'Medium', 'avg_resolution_days' => 0],
-                ['priority' => 'High', 'avg_resolution_days' => 0],
-                ['priority' => 'Critical', 'avg_resolution_days' => 0]
-            ];
-        }
-        
-        // If no time data, create some sample data for last 7 days
-        if (empty($bugsOverTime)) {
-            $bugsOverTime = [];
-            for ($i = 6; $i >= 0; $i--) {
-                $date = date('Y-m-d', strtotime("-$i days"));
-                $bugsOverTime[] = ['date' => $date, 'count' => 0];
-            }
-        }
+        $bugsOverTime = getBugsOverTime();
+        $resolutionTimes = getResolutionTimes();
         
         debugLog("Chart data retrieved", [
             'bugs_over_time_count' => count($bugsOverTime),
@@ -190,22 +142,59 @@ function getChartData() {
     } catch (PDOException $e) {
         debugLog("getChartData database error", ['error' => $e->getMessage()]);
         
-        // Return default chart data
-        $defaultBugsOverTime = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = date('Y-m-d', strtotime("-$i days"));
-            $defaultBugsOverTime[] = ['date' => $date, 'count' => 0];
-        }
-        
         jsonResponse([
-            'bugs_over_time' => $defaultBugsOverTime,
-            'resolution_times' => [
-                ['priority' => 'Low', 'avg_resolution_days' => 0],
-                ['priority' => 'Medium', 'avg_resolution_days' => 0],
-                ['priority' => 'High', 'avg_resolution_days' => 0],
-                ['priority' => 'Critical', 'avg_resolution_days' => 0]
-            ]
+            'bugs_over_time' => getDefaultBugsOverTime(),
+            'resolution_times' => getDefaultResolutionTimes()
         ]);
     }
+}
+
+function getBugsOverTime() {
+    global $pdo;
+    
+    $stmt = $pdo->query("
+        SELECT DATE(created_at) as date, COUNT(*) as count
+        FROM bugs
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+    ");
+    
+    $result = $stmt->fetchAll();
+    return !empty($result) ? $result : getDefaultBugsOverTime();
+}
+
+function getResolutionTimes() {
+    global $pdo;
+    
+    $stmt = $pdo->query("
+        SELECT 
+            priority,
+            AVG(DATEDIFF(COALESCE(updated_at, NOW()), created_at)) as avg_resolution_days
+        FROM bugs 
+        WHERE status IN ('Resolved', 'Closed')
+        GROUP BY priority
+    ");
+    
+    $result = $stmt->fetchAll();
+    return !empty($result) ? $result : getDefaultResolutionTimes();
+}
+
+function getDefaultBugsOverTime() {
+    $data = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $date = date('Y-m-d', strtotime("-$i days"));
+        $data[] = ['date' => $date, 'count' => 0];
+    }
+    return $data;
+}
+
+function getDefaultResolutionTimes() {
+    return [
+        ['priority' => 'Low', 'avg_resolution_days' => 0],
+        ['priority' => 'Medium', 'avg_resolution_days' => 0],
+        ['priority' => 'High', 'avg_resolution_days' => 0],
+        ['priority' => 'Critical', 'avg_resolution_days' => 0]
+    ];
 }
 ?>

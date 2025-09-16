@@ -29,17 +29,14 @@ define('PASSWORD_MIN_LENGTH', 6);
 // Include database configuration
 require_once 'database.php';
 
-// Helper functions
+// Authentication functions
 function isLoggedIn() {
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        http_response_code(401);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Authentication required', 'authenticated' => false]);
-        exit();
+        jsonResponse(['error' => 'Authentication required', 'authenticated' => false], 401);
     }
 }
 
@@ -51,6 +48,7 @@ function isAdmin() {
     return getUserRole() === 'Admin';
 }
 
+// Utility functions
 function sanitizeInput($data) {
     if ($data === null || $data === '') {
         return '';
@@ -58,31 +56,15 @@ function sanitizeInput($data) {
     return htmlspecialchars(strip_tags(trim($data)), ENT_QUOTES, 'UTF-8');
 }
 
+function isValidEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
 function formatDate($date) {
     return date('M j, Y g:i A', strtotime($date));
 }
 
-function getPriorityColor($priority) {
-    switch($priority) {
-        case 'Critical': return 'bg-red-500';
-        case 'High': return 'bg-orange-500';
-        case 'Medium': return 'bg-yellow-500';
-        case 'Low': return 'bg-green-500';
-        default: return 'bg-gray-500';
-    }
-}
-
-function getStatusColor($status) {
-    switch($status) {
-        case 'New': return 'bg-blue-500';
-        case 'In Progress': return 'bg-purple-500';
-        case 'Resolved': return 'bg-green-500';
-        case 'Closed': return 'bg-gray-500';
-        default: return 'bg-gray-500';
-    }
-}
-
-// JSON response helper
+// Response helper
 function jsonResponse($data, $status = 200) {
     http_response_code($status);
     header('Content-Type: application/json');
@@ -91,17 +73,28 @@ function jsonResponse($data, $status = 200) {
     exit();
 }
 
-// Validate email
-function isValidEmail($email) {
-    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
-}
-
 // Debug function
 function debugLog($message, $data = null) {
     if ($data !== null) {
         error_log("BugSage Debug - $message: " . print_r($data, true));
     } else {
         error_log("BugSage Debug - $message");
+    }
+}
+
+// CORS headers helper
+function setCorsHeaders() {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
+    header('Access-Control-Allow-Credentials: true');
+}
+
+// Handle preflight OPTIONS request
+function handlePreflight() {
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit(0);
     }
 }
 ?>

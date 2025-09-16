@@ -140,16 +140,18 @@
 
     <script src="js/main.js"></script>
     <script>
-        // Initialize bug detail page
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
-            const urlParams = new URLSearchParams(window.location.search);
-            const bugId = urlParams.get('id');
-            if (bugId) {
-                loadBugDetails(bugId);
-            } else {
-                window.location.href = 'buglist.html';
-            }
+            auth.check().then(user => {
+                if (user) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const bugId = urlParams.get('id');
+                    if (bugId) {
+                        bugs.loadDetails(bugId);
+                    } else {
+                        window.location.href = 'buglist.html';
+                    }
+                }
+            });
         });
     </script>
 </body>
