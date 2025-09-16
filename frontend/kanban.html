@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board - BugSage</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/kanban.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-bug"></i>
+                <span>BugSage</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link active">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="buglist.html" class="nav-link">
+                    <i class="fas fa-list"></i>
+                    Bugs
+                </a>
+                <a href="kanban.html" class="nav-link">
+                    <i class="fas fa-columns"></i>
+                    Kanban
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </a>
+            </div>
+            <div class="nav-user">
+                <span id="user-name">Loading...</span>
+                <button id="logout-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container-fluid">
+            <div class="page-header">
+                <h1>Kanban Board</h1>
+                <a href="createbug.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Report Bug
+                </a>
+            </div>
+
+            <div class="kanban-board">
+                <div class="kanban-column" data-status="New">
+                    <div class="column-header">
+                        <h3>New</h3>
+                        <span class="bug-count" id="new-count">0</span>
+                    </div>
+                    <div class="column-content" id="new-column">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column" data-status="In Progress">
+                    <div class="column-header">
+                        <h3>In Progress</h3>
+                        <span class="bug-count" id="progress-count">0</span>
+                    </div>
+                    <div class="column-content" id="progress-column">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column" data-status="Resolved">
+                    <div class="column-header">
+                        <h3>Resolved</h3>
+                        <span class="bug-count" id="resolved-count">0</span>
+                    </div>
+                    <div class="column-content" id="resolved-column">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+
+                <div class="kanban-column" data-status="Closed">
+                    <div class="column-header">
+                        <h3>Closed</h3>
+                        <span class="bug-count" id="closed-count">0</span>
+                    </div>
+                    <div class="column-content" id="closed-column">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/kanban.js"></script>
+</body>
+</html>

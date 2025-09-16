@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug Details - BugSage</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-bug"></i>
+                <span>BugSage</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="buglist.html" class="nav-link">
+                    <i class="fas fa-list"></i>
+                    Bugs
+                </a>
+                <a href="kanban.html" class="nav-link">
+                    <i class="fas fa-columns"></i>
+                    Kanban
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </a>
+            </div>
+            <div class="nav-user">
+                <span id="user-name">Loading...</span>
+                <button id="logout-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 id="bug-title">Loading...</h1>
+                <div class="bug-actions">
+                    <button id="edit-bug" class="btn btn-primary">
+                        <i class="fas fa-edit"></i>
+                        Edit
+                    </button>
+                    <a href="buglist.html" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to List
+                    </a>
+                </div>
+            </div>
+
+            <div class="bug-detail-grid">
+                <div class="bug-main">
+                    <div class="bug-info-card">
+                        <div class="bug-meta">
+                            <div class="meta-item">
+                                <label>ID:</label>
+                                <span id="bug-id">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Status:</label>
+                                <span id="bug-status" class="status-badge">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Priority:</label>
+                                <span id="bug-priority" class="priority-badge">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Reporter:</label>
+                                <span id="bug-reporter">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Assignee:</label>
+                                <span id="bug-assignee">-</span>
+                            </div>
+                            <div class="meta-item">
+                                <label>Created:</label>
+                                <span id="bug-created">-</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bug-description">
+                            <h3>Description</h3>
+                            <div id="bug-description-content">Loading...</div>
+                        </div>
+                    </div>
+
+                    <div class="comments-section">
+                        <div class="section-header">
+                            <h3>Comments</h3>
+                        </div>
+                        
+                        <div class="add-comment">
+                            <form id="comment-form">
+                                <textarea id="comment-text" placeholder="Add a comment..." rows="3"></textarea>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-comment"></i>
+                                    Add Comment
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div id="comments-list" class="comments-list">
+                            <div class="loading">Loading comments...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bug-sidebar">
+                    <div class="sidebar-section">
+                        <h3>Quick Actions</h3>
+                        <div class="status-actions">
+                            <button class="status-btn" data-status="New">New</button>
+                            <button class="status-btn" data-status="In Progress">In Progress</button>
+                            <button class="status-btn" data-status="Resolved">Resolved</button>
+                            <button class="status-btn" data-status="Closed">Closed</button>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>Attachments</h3>
+                        <div id="attachments-list" class="attachments-list">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script>
+        // Initialize bug detail page
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            const urlParams = new URLSearchParams(window.location.search);
+            const bugId = urlParams.get('id');
+            if (bugId) {
+                loadBugDetails(bugId);
+            } else {
+                window.location.href = 'buglist.html';
+            }
+        });
+    </script>
+</body>
+</html>

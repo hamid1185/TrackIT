@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bug List - BugSage</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-bug"></i>
+                <span>BugSage</span>
+            </div>
+            <div class="nav-menu">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                <a href="buglist.html" class="nav-link active">
+                    <i class="fas fa-list"></i>
+                    Bugs
+                </a>
+                <a href="kanban.html" class="nav-link">
+                    <i class="fas fa-columns"></i>
+                    Kanban
+                </a>
+                <a href="reports.html" class="nav-link">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </a>
+            </div>
+            <div class="nav-user">
+                <span id="user-name">Loading...</span>
+                <button id="logout-btn" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>Bug List</h1>
+                <a href="createbug.html" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Report Bug
+                </a>
+            </div>
+
+            <div class="filters-section">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="status-filter">Status</label>
+                        <select id="status-filter">
+                            <option value="">All Status</option>
+                            <option value="New">New</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Resolved">Resolved</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="priority-filter">Priority</label>
+                        <select id="priority-filter">
+                            <option value="">All Priorities</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="search-input">Search</label>
+                        <input type="text" id="search-input" placeholder="Search bugs...">
+                    </div>
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn btn-primary">Apply</button>
+                        <button id="clear-filters" class="btn btn-secondary">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bugs-section">
+                <div class="table-container">
+                    <table id="bugs-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th class="hidden-mobile">Priority</th>
+                                <th class="hidden-mobile">Status</th>
+                                <th class="hidden-tablet">Assignee</th>
+                                <th class="hidden-desktop">Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="7" class="loading">Loading bugs...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="pagination" class="pagination">
+                    <!-- Pagination will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/main.js"></script>
+    <script>
+        // Initialize bug list page
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadBugList();
+            setupFilters();
+        });
+    </script>
+</body>
+</html>
